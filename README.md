@@ -1,88 +1,189 @@
-# AgriEnv: Precision Agriculture RL Environment
+---
+title: AgriEnv OpenEnv Server
+emoji: 🌱
+colorFrom: green
+colorTo: blue
+sdk: docker
+pinned: false
+app_port: 8000
+base_path: /web
+tags:
+  - openenv
+  - reinforcement-learning
+  - sustainability
+  - agriculture
+---
 
-AgriEnv is a biologically inspired and economically aware OpenAI Gymnasium-compatible reinforcement learning environment designed for precision agriculture in greenhouse systems.
+# AgriEnv
 
-## Objective
+AgriEnv is a precision agriculture reinforcement learning environment built in the OpenEnv client/server pattern. It simulates greenhouse control under water, nutrient, pest, and energy tradeoffs, and exposes the standard OpenEnv `reset()`, `step()`, and `state()` interface over HTTP and WebSocket.
 
-The goal for an RL agent in this environment is to control key greenhouse parameters—irrigation, nutrient injection, CO2 levels, and pesticide usage—to maximize crop growth while minimizing operational costs and environmental impact.
+## Why this version is the final product
 
-## Features
+This repo now follows the OpenEnv course architecture instead of only shipping a local Gym-style simulator:
 
-- **Gymnasium Compatible**: Follows the standard `reset()` and `step()` API.
-- **Biologically Inspired Dynamics**: 
-  - Soil moisture increases with irrigation and decreases via temperature-dependent evaporation.
-  - Nutrients (N, P, K) increase with injection and face natural decay.
-  - Pest density increases in high humidity and decreases with pesticide application.
-- **Economic Awareness**: Includes variable energy prices and material costs (water, CO2).
-- **Stochasticity**: Small random fluctuations in weather (temperature/humidity) and energy prices to provide a more robust training challenge.
-- **Shaping Penalties**: Discourages excessive resource usage (e.g., over-irrigation or heavy pesticide use).
+- `agri_env/models.py`: typed OpenEnv contracts for `Action`, `Observation`, and `AgriState`
+- `agri_env/client.py`: typed `EnvClient` for training code and notebooks
+- `agri_env/env.py`: local deterministic simulator used by the server and baseline agent
+- `server/agri_environment.py`: OpenEnv server wrapper
+- `server/app.py`: FastAPI app exposing `/reset`, `/step`, `/state`, `/ws`, `/docs`, `/health`, `/metadata`
+- `Dockerfile`: Space-ready container entrypoint
+- `openenv.yaml`: OpenEnv manifest
+- `pyproject.toml`: package metadata and `server` entry point
 
-## Environment Specifications
+## Problem motivation
 
-### Observation Space (8-dim Continuous Box)
-1. `soil_moisture`: (0.0 to 1.0)
-2. `nitrogen`: (0.0 to 1.0)
-3. `phosphorus`: (0.0 to 1.0)
-4. `potassium`: (0.0 to 1.0)
-5. `temperature`: (10.0 to 50.0 °C)
-6. `humidity`: (0.0 to 100.0 %)
-7. `pest_density`: (0.0 to 1.0)
-8. `energy_price`: (1.0 to 10.0)
+Greenhouse operators need to manage irrigation, NPK dosing, CO2 enrichment, and pesticide use while staying cost-efficient and stable under noisy sensing and weather drift. AgriEnv turns that real control problem into a deterministic, typed RL environment that can be trained locally or deployed as an OpenEnv microservice.
 
-### Action Space (6-dim Continuous Box)
-1. `irrigation`: (0.0 to 500.0 ml/hr)
-2. `nitrogen_injection`: (0.0 to 0.5)
-3. `phosphorus_injection`: (0.0 to 0.5)
-4. `potassium_injection`: (0.0 to 0.5)
-5. `co2_level`: (300.0 to 800.0 ppm)
-6. `pesticide_usage`: (0.0 to 1.0)
+## Observation, action, and reward design
 
-### Reward Function
-The reward represents the net profit:
-`reward = growth - (alpha * cost) - penalties`
-- **Growth**: High when soil moisture is near optimal (0.6), nutrients are high, and pests are low.
-- **Cost**: Derived from water consumption and CO2 enrichment.
-- **Penalties**: Small penalties for excessive irrigation (>400) or pesticide usage (>0.8).
+### Observation
 
-## Getting Started
+`Observation` includes:
 
-### Prerequisites
-Ensure you have Python 3.8+ and `pip` installed.
+- `soil_moisture`
+- `nitrogen`
+- `phosphorus`
+- `potassium`
+- `temperature_c`
+- `humidity`
+- `pest_density`
+- `energy_price`
+- `water_budget_remaining`
+- `growth_stage_progress`
 
-### Installation
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/Coderzz69/Agri_Env.git
-   cd Agri_Env
-   ```
-2. Create and activate a virtual environment:
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate
-   ```
-3. Install dependencies:
-   ```bash
-   pip install numpy gymnasium
-   ```
+It also includes task metadata and uses the inherited OpenEnv `done`, `reward`, and `metadata` fields.
 
-### Usage
-Run the built-in random agent demo:
+### Action
+
+`Action` controls:
+
+- `irrigation`
+- `nitrogen_injection`
+- `phosphorus_injection`
+- `potassium_injection`
+- `co2_ppm`
+- `pesticide`
+
+### Reward
+
+The shaped reward balances:
+
+- crop growth
+- moisture alignment
+- nutrient alignment
+- efficiency bonus
+- stability bonus
+- task-specific bonus
+- operational cost
+- overuse penalties
+- pest pressure
+
+The scalar reward is returned through the OpenEnv observation contract, and a detailed reward breakdown is stored in observation metadata.
+
+## Tasks
+
+- `easy`: maintain soil moisture near `0.70`
+- `medium`: balance NPK and reduce pest pressure
+- `hard`: full yield-cost optimization under noise, drift, and water-budget pressure
+
+Each task has a deterministic grader in `[0, 1]`.
+
+## OpenEnv usage
+
+### Local server
+
 ```bash
-python agri_env.py
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e .
+python -m server.app --port 8000
 ```
 
-## Example Code
+### Validate the environment
+
+```bash
+.venv/bin/openenv validate .
+.venv/bin/openenv validate --url http://127.0.0.1:8000
+python3 -m unittest discover -s tests -v
+```
+
+### Use the typed client
+
 ```python
-import gymnasium as gym
-from agri_env import AgriEnv
+from agri_env import Action
+from agri_env.client import AgriEnvClient
 
-env = AgriEnv(render_mode="human")
-obs, info = env.reset()
-
-for _ in range(200):
-    action = env.action_space.sample()
-    obs, reward, terminated, truncated, info = env.step(action)
-    if terminated or truncated:
-        break
-env.close()
+with AgriEnvClient(base_url="http://127.0.0.1:8000").sync() as env:
+    result = env.reset(task="easy", seed=11)
+    result = env.step(
+        Action(
+            irrigation=120.0,
+            nitrogen_injection=0.05,
+            phosphorus_injection=0.04,
+            potassium_injection=0.05,
+            co2_ppm=500.0,
+            pesticide=0.02,
+        )
+    )
+    print(result.observation.soil_moisture, result.reward, result.done)
 ```
+
+### Run the baseline locally
+
+```bash
+export HF_TOKEN=dummy
+python3 inference.py --task hard --policy baseline
+```
+
+### Run the baseline against a running OpenEnv server
+
+```bash
+export HF_TOKEN=dummy
+python3 inference.py --task hard --policy baseline --base-url http://127.0.0.1:8000
+```
+
+### Run the LLM controller
+
+```bash
+export HF_TOKEN=your_real_token
+export API_BASE_URL=https://router.huggingface.co/v1
+export MODEL_NAME=meta-llama/Llama-3.1-8B-Instruct
+python3 inference.py --task hard --policy llm --base-url http://127.0.0.1:8000
+```
+
+## Deployment
+
+### Docker
+
+```bash
+docker build -t agri-env .
+docker run --rm -p 8000:8000 agri-env
+```
+
+### Hugging Face Spaces
+
+```bash
+.venv/bin/openenv push --repo-id <your-username>/agri-env
+```
+
+After deployment:
+
+- app UI: `https://<your-username>-agri-env.hf.space/web`
+- docs: `https://<your-username>-agri-env.hf.space/docs`
+- health: `https://<your-username>-agri-env.hf.space/health`
+- websocket endpoint: `wss://<your-username>-agri-env.hf.space/ws`
+
+## Example baseline results
+
+Default seeded baseline scores:
+
+- `easy`: `0.8470`
+- `medium`: `0.8084`
+- `hard`: `0.8425`
+
+## Notes
+
+- The environment is deterministic for a fixed task and seed.
+- The server supports concurrent sessions.
+- The Space container enables the OpenEnv web interface through `ENABLE_WEB_INTERFACE=true`.

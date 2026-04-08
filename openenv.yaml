@@ -1,0 +1,44 @@
+spec_version: 1
+name: agri_env
+type: space
+runtime: fastapi
+app: server.app:app
+port: 8000
+metadata:
+  title: AgriEnv
+  version: 1.0.0
+  description: OpenEnv-compatible greenhouse control environment for precision agriculture.
+  domain: precision-agriculture
+  modality: continuous-control
+  deterministic_graders: true
+  language: python
+  license: MIT
+  tags:
+    - greenhouse-control
+    - reinforcement-learning
+    - sustainability
+    - openenv
+inference: inference.py
+dockerfile: Dockerfile
+defaults:
+  API_BASE_URL: https://router.huggingface.co/v1
+  MODEL_NAME: meta-llama/Llama-3.1-8B-Instruct
+tasks:
+  - id: easy
+    difficulty: easy
+    name: Maintain Optimal Soil Moisture
+    horizon: 60
+    description: Keep soil moisture close to 0.70 with stable irrigation and low cost.
+    grader: agri_env.graders:grade_easy
+  - id: medium
+    difficulty: medium
+    name: Balance Nutrients and Suppress Pests
+    horizon: 90
+    description: Maintain balanced NPK levels while keeping pest density under control.
+    grader: agri_env.graders:grade_medium
+  - id: hard
+    difficulty: hard
+    name: Full Yield and Cost Optimization
+    horizon: 140
+    description: Maximize yield while minimizing cost under weather drift, sensor noise, and water budget pressure.
+    grader: agri_env.graders:grade_hard

@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agri-env"
+version = "1.0.0"
+description = "OpenEnv precision agriculture greenhouse environment"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.110.0",
+    "gymnasium>=0.29.0",
+    "numpy>=1.26.0",
+    "openai>=1.30.0",
+    "openenv-core[core]>=0.2.2",
+    "pydantic>=2.7.0",
+    "uvicorn>=0.30.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "httpx>=0.27.0",
+    "pytest>=8.0.0",
+]
+
+[project.scripts]
+server = "server.app:main"
+
+[tool.setuptools]
+include-package-data = true
+packages = ["agri_env", "server"]
+package-dir = { agri_env = "agri_env", server = "server" }
