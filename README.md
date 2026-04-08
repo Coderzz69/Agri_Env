@@ -181,8 +181,10 @@ docker run --rm -p 8000:8000 agri-env
 ### Hugging Face Spaces
 
 ```bash
-.venv/bin/openenv push --repo-id <your-username>/agri-env
+.venv/bin/openenv push --repo-id <your-username>/agri-env --exclude push-exclude.txt
 ```
+
+If you keep your virtual environment inside the repo, use `--exclude push-exclude.txt`. The current OpenEnv push command does not automatically reuse `.gitignore` patterns during staging, so excluding `.venv/` explicitly avoids large uploads and 504 errors.
 
 After deployment:
 

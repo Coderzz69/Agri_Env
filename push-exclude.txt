@@ -1,0 +1,15 @@
+# Extra excludes for `openenv push --exclude push-exclude.txt`
+# The OpenEnv CLI does not automatically read .gitignore during push staging.
+
+.git/
+.venv/
+env/
+venv/
+ENV/
+__pycache__/
+.pytest_cache/
+outputs/
+*.pyc
+*.pyo
+*.log
+
