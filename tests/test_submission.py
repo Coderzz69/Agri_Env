@@ -124,6 +124,26 @@ class AgriEnvSubmissionTests(unittest.TestCase):
         self.assertEqual(sum(1 for line in lines if line.startswith("[END]")), 3)
         self.assertEqual(start_tasks, ["easy", "medium", "hard"])
 
+    def test_inference_uses_api_key_environment_variable(self) -> None:
+        completed = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                (
+                    "import os; "
+                    "os.environ['API_KEY']='proxy-key'; "
+                    "import inference; "
+                    "print(inference.API_KEY)"
+                ),
+            ],
+            cwd=ROOT,
+            env=os.environ.copy(),
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(completed.stdout.strip(), "proxy-key")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -23,7 +23,7 @@ DEFAULT_MODEL_NAME = "meta-llama/Llama-3.1-8B-Instruct"
 BENCHMARK = "agri-env"
 API_BASE_URL = os.getenv("API_BASE_URL", DEFAULT_API_BASE_URL)
 MODEL_NAME = os.getenv("MODEL_NAME", DEFAULT_MODEL_NAME)
-HF_TOKEN = os.getenv("HF_TOKEN") or os.getenv("OPENAI_API_KEY") or os.getenv("API_KEY")
+API_KEY = os.getenv("API_KEY") or os.getenv("HF_TOKEN") or os.getenv("OPENAI_API_KEY")
 LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME")
 
 
@@ -131,7 +131,7 @@ class HeuristicPolicy:
 
 
 class OpenAIController:
-    """LLM-backed controller with heuristic fallback."""
+    """LLM-backed controller that must hit the configured proxy."""
 
     def __init__(self, client: Any, model_name: str) -> None:
         self.client = client
@@ -140,7 +140,7 @@ class OpenAIController:
 
     def act(self, observation: Any, task_id: str) -> tuple[Action, str | None]:
         if self.client is None:
-            return self.fallback.act(observation, task_id), "openai_client_unavailable"
+            raise RuntimeError("missing_api_key")
 
         task = TASKS[task_id]
         prompt = {
@@ -237,7 +237,7 @@ def _print_end(success: bool, steps: int, score: float, rewards: list[float]) ->
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run AgriEnv inference.")
     parser.add_argument("--task", choices=["all", *TASKS], default="all")
-    parser.add_argument("--policy", choices=["baseline", "llm"], default="baseline")
+    parser.add_argument("--policy", choices=["baseline", "llm"], default="llm")
     parser.add_argument("--seed", type=int, default=None)
     parser.add_argument("--base-url", default=None, help="Optional OpenEnv server base URL.")
     return parser.parse_args()
@@ -358,7 +358,7 @@ def _run_remote_task(
 def main() -> int:
     _ = LOCAL_IMAGE_NAME
     args = parse_args()
-    client = _build_client(api_base_url=API_BASE_URL, hf_token=HF_TOKEN or "")
+    client = _build_client(api_base_url=API_BASE_URL, hf_token=API_KEY or "")
     policy = HeuristicPolicy() if args.policy == "baseline" else OpenAIController(client=client, model_name=MODEL_NAME)
     task_ids = list(TASKS) if args.task == "all" else [args.task]
 

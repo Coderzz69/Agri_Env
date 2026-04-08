@@ -94,7 +94,17 @@ class AgriEnv:
         self._temp_phase = self._rng.uniform(0.0, math.tau)
         self._humidity_phase = self._rng.uniform(0.0, math.tau)
         self._energy_phase = self._rng.uniform(0.0, math.tau)
-        return self._observe(done=False, reward=None, extra_metadata={"event": "reset"})
+        return self._observe(
+            done=False,
+            reward=None,
+            extra_metadata={
+                "event": "reset",
+                "episode_id": self._episode_id,
+                "step_count": self.current_step,
+                "horizon": self.task.horizon,
+                "steps_remaining": self.task.horizon - self.current_step,
+            },
+        )
 
     def step(self, action: Action | dict[str, float] | list[float] | tuple[float, ...]) -> tuple[Observation, Reward, bool, dict[str, Any]]:
         """Advance one timestep and return observation, reward, done, and info."""
@@ -272,8 +282,12 @@ class AgriEnv:
 
         done = self.current_step >= self.task.horizon
         info: dict[str, Any] = {
+            "episode_id": self._episode_id,
             "task_id": self.task.task_id,
             "difficulty": self.task.difficulty,
+            "step_count": self.current_step,
+            "horizon": self.task.horizon,
+            "steps_remaining": max(self.task.horizon - self.current_step, 0),
             "stage": stage_name,
             "stage_progress": stage_progress,
             "cumulative_yield": self.cumulative_yield,

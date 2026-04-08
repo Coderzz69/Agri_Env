@@ -142,19 +142,18 @@ with AgriEnvClient(base_url="http://127.0.0.1:8000").sync() as env:
 python3 inference.py --policy baseline
 ```
 
-By default, `inference.py` runs the deterministic baseline across all three tasks and emits one `[START] ... [STEP] ... [END]` block per task.
+`--policy baseline` is the deterministic local heuristic. It is useful for smoke tests and reproducible offline scoring.
 
 ### Run the baseline against a running OpenEnv server
 
 ```bash
-export HF_TOKEN=dummy
 python3 inference.py --task hard --policy baseline --base-url http://127.0.0.1:8000
 ```
 
 ### Run the LLM controller
 
 ```bash
-export HF_TOKEN=your_real_token
+export API_KEY=your_proxy_key
 export API_BASE_URL=https://router.huggingface.co/v1
 export MODEL_NAME=meta-llama/Llama-3.1-8B-Instruct
 python3 inference.py --task hard --policy llm --base-url http://127.0.0.1:8000
@@ -164,9 +163,11 @@ The inference runner reads:
 
 - `API_BASE_URL` with a default of `https://router.huggingface.co/v1`
 - `MODEL_NAME` with a default of `meta-llama/Llama-3.1-8B-Instruct`
-- `HF_TOKEN` with no default
+- `API_KEY` with no default
 
-For compatibility with common local setups, it also accepts `OPENAI_API_KEY` or `API_KEY` as fallbacks for the token.
+For compatibility with common local setups, it also accepts `HF_TOKEN` or `OPENAI_API_KEY` as fallbacks, but the validator-facing path uses `API_KEY`.
+
+By default, `inference.py` runs the LLM controller across all three tasks and emits one `[START] ... [STEP] ... [END]` block per task. This default path is the one intended for hackathon evaluation because it routes requests through the injected LiteLLM proxy.
 
 ## Deployment
 
