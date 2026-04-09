@@ -144,6 +144,24 @@ class AgriEnvSubmissionTests(unittest.TestCase):
         )
         self.assertEqual(completed.stdout.strip(), "proxy-key")
 
+    def test_inference_llm_mode_without_api_key_still_exits_cleanly(self) -> None:
+        env = os.environ.copy()
+        env.pop("API_KEY", None)
+        env.pop("HF_TOKEN", None)
+        env.pop("OPENAI_API_KEY", None)
+        completed = subprocess.run(
+            [sys.executable, "inference.py", "--task", "easy", "--policy", "llm"],
+            cwd=ROOT,
+            env=env,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        lines = [line for line in completed.stdout.splitlines() if line.strip()]
+        self.assertRegex(lines[0], START_PATTERN)
+        self.assertRegex(lines[-1], END_PATTERN)
+        self.assertIn("success=false", lines[-1])
+
 
 if __name__ == "__main__":
     unittest.main()

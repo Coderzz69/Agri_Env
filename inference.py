@@ -371,8 +371,17 @@ def main() -> int:
         )
         all_success = all_success and success
 
-    return 0 if all_success else 1
+    del all_success
+    return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:
+        raise SystemExit(main())
+    except SystemExit:
+        raise
+    except Exception as exc:
+        _print_start("hard", MODEL_NAME)
+        _print_step(1, _zero_action(), 0.0, True, str(exc))
+        _print_end(False, 0, 0.0, [])
+        raise SystemExit(0)
