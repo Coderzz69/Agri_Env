@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgriEnv | Premium Precision Agriculture</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo-area">
+                <div class="logo-icon">🌱</div>
+                <h1>AgriEnv</h1>
+            </div>
+            <div class="simulation-status">
+                <div class="status-indicator" id="connection-status">
+                    <span class="dot"></span>
+                    <span class="status-text">Connecting...</span>
+                </div>
+                <div class="task-info">
+                    <label>Current Task</label>
+                    <select id="task-select">
+                        <option value="easy">Easy: Moisture Control</option>
+                        <option value="medium" selected>Medium: Nutrients & Pests</option>
+                        <option value="hard">Hard: Full Optimization</option>
+                    </select>
+                </div>
+            </div>
+
+            <nav class="main-nav">
+                <div class="nav-item active" id="nav-dashboard">Dashboard</div>
+                <div class="nav-item" id="nav-logs">Live Logs</div>
+            </nav>
+
+            <div class="footer-actions">
+                <button id="reset-btn" class="secondary-btn">Reset Environment</button>
+                <a href="/web" target="_blank" class="playground-link">Open original playground ↗</a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-header">
+                <div class="header-left">
+                    <h2>Greenhouse Overview</h2>
+                    <p id="current-stage">Growth Stage: Initializing...</p>
+                </div>
+                <div class="header-right">
+                    <div class="metric-mini">
+                        <span class="mini-label">Step</span>
+                        <span class="mini-value" id="step-count">0</span>
+                    </div>
+                    <div class="metric-mini highlight">
+                        <span class="mini-label">Reward</span>
+                        <span class="mini-value" id="reward-value">0.00</span>
+                    </div>
+                </div>
+            </header>
+
+            <div class="dashboard-grid">
+                <!-- Live Metrics Cards -->
+                <section class="metrics-row">
+                    <div class="metric-card moisture">
+                        <div class="card-icon">💧</div>
+                        <div class="card-info">
+                            <label>Soil Moisture</label>
+                            <span class="value" id="val-soil-moisture">0.00</span>
+                        </div>
+                    </div>
+                    <div class="metric-card nitrogen">
+                        <div class="card-icon">🧪</div>
+                        <div class="card-info">
+                            <label>Nitrogen (N)</label>
+                            <span class="value" id="val-nitrogen">0.00</span>
+                        </div>
+                    </div>
+                    <div class="metric-card pests">
+                        <div class="card-icon">🪲</div>
+                        <div class="card-info">
+                            <label>Pest Density</label>
+                            <span class="value" id="val-pests">0.00</span>
+                        </div>
+                    </div>
+                    <div class="metric-card health">
+                        <div class="card-icon">✨</div>
+                        <div class="card-info">
+                            <label>Cum. Yield</label>
+                            <span class="value" id="val-yield">0.00</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Charts Area -->
+                <section class="charts-row">
+                    <div class="chart-container glass">
+                        <h3>Condition Trends</h3>
+                        <canvas id="trendsChart"></canvas>
+                    </div>
+                    <div class="chart-container glass">
+                        <h3>Reward Signal</h3>
+                        <canvas id="rewardChart"></canvas>
+                    </div>
+                </section>
+
+                <!-- Control Panel -->
+                <section class="controls-area glass">
+                    <h3>Manual Environmental Controls</h3>
+                    <div class="controls-grid">
+                        <div class="control-group">
+                            <label>Irrigation: <span id="label-irrigation">0.0</span></label>
+                            <input type="range" id="input-irrigation" min="0" max="1000" value="0" step="10">
+                        </div>
+                        <div class="control-group">
+                            <label>NPK Injection: <span id="label-npk">0.00</span></label>
+                            <input type="range" id="input-npk" min="0" max="0.5" value="0.05" step="0.01">
+                        </div>
+                        <div class="control-group">
+                            <label>CO2 Enrichment: <span id="label-co2">400</span> ppm</label>
+                            <input type="range" id="input-co2" min="300" max="1200" value="400" step="50">
+                        </div>
+                        <div class="control-group">
+                            <label>Pesticide Use: <span id="label-pest">0.00</span></label>
+                            <input type="range" id="input-pest" min="0" max="0.2" value="0.0" step="0.01">
+                        </div>
+                    </div>
+                    <div class="action-footer">
+                        <button id="step-btn" class="primary-btn">Manual Step</button>
+                        <button id="auto-btn" class="accent-btn">Resume RL Autopilot</button>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Hidden Logs Panel overlay -->
+    <div id="logs-panel" class="overlay-panel hidden">
+        <header>
+            <h3>Execution Logs</h3>
+            <button id="close-logs">Close</button>
+        </header>
+        <div id="logs-content"></div>
+    </div>
+
+    <script src="static/app.js"></script>
+</body>
+</html>

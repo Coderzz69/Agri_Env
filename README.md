@@ -6,7 +6,7 @@ colorTo: blue
 sdk: docker
 pinned: false
 app_port: 8000
-base_path: /web
+base_path: /
 tags:
   - openenv
   - reinforcement-learning
@@ -24,12 +24,15 @@ This repo now follows the OpenEnv course architecture instead of only shipping a
 
 - `agri_env/models.py`: typed OpenEnv contracts for `Action`, `Observation`, and `AgriState`
 - `agri_env/client.py`: typed `EnvClient` for training code and notebooks
-- `agri_env/env.py`: local deterministic simulator used by the server and baseline agent
+- `agri_env/env.py`: core simulator, observation normalization, and SB3 wrapper
+- `agri_env/gui.py`: real-time monitoring dashboard
 - `server/agri_environment.py`: OpenEnv server wrapper
-- `server/app.py`: FastAPI app exposing `/reset`, `/step`, `/state`, `/ws`, `/docs`, `/health`, `/metadata`
+- `server/app.py`: FastAPI app (OpenEnv main server)
+- `server/flask_app.py`: Secondary Flask REST API
+- `train_rl.py`: SB3 PPO training pipeline
 - `Dockerfile`: Space-ready container entrypoint
 - `openenv.yaml`: OpenEnv manifest
-- `pyproject.toml`: package metadata and `server` entry point
+- `pyproject.toml`: package metadata and script entry points
 
 ## Problem motivation
 
@@ -39,22 +42,21 @@ Greenhouse operators need to manage irrigation, NPK dosing, CO2 enrichment, and 
 
 ### Observation
 
-`Observation` includes:
+`Observation` features are normalized to the `[0, 1]` range for optimal Reinforcement Learning performance:
 
-- `soil_moisture`
-- `nitrogen`
-- `phosphorus`
-- `potassium`
-- `temperature_c`
-- `humidity`
-- `pest_density`
-- `energy_price`
-- `water_budget_remaining`
-- `growth_stage_progress`
+- `soil_moisture`: [0, 1] (0.70 is optimal)
+- `nitrogen`: [0, 1]
+- `phosphorus`: [0, 1]
+- `potassium`: [0, 1]
+- `temperature_c`: [0, 1] (normalized from [7.5, 45.0])
+- `humidity`: [0, 1] (normalized from [0.0, 100.0])
+- `pest_density`: [0, 1]
+- `energy_price`: [0, 1] (normalized from [1.0, 17.0])
+- `water_budget_remaining`: [0, 1]
+- `growth_stage_progress`: [0, 1]
 
 It also includes task metadata and uses the inherited OpenEnv `done`, `reward`, and `metadata` fields.
-
-### Action
+Detailed reward breakdowns are available in the observation metadata.
 
 `Action` controls:
 
@@ -134,6 +136,34 @@ with AgriEnvClient(base_url="http://127.0.0.1:8000").sync() as env:
         )
     )
     print(result.observation.soil_moisture, result.reward, result.done)
+```
+
+### Run the Dashboard
+
+The integrated dashboard allows you to monitor simulation state, reward signals, and variance in real-time.
+
+```bash
+agri-gui
+```
+
+### Reinforcement Learning Training
+
+AgriEnv is optimized for RL with stable reward signals and normalized observations. You can train a PPO agent out-of-the-box:
+
+```bash
+# Start training
+train-rl
+
+# Monitor via TensorBoard
+tensorboard --logdir=logs/
+```
+
+### Secondary Flask API
+
+For standard web integrations that don't require the full OpenEnv FastAPI spec, a lightweight Flask API is available:
+
+```bash
+flask-api
 ```
 
 ### Run the baseline locally

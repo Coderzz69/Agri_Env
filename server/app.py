@@ -7,6 +7,8 @@ import os
 
 from openenv.core.env_server.http_server import create_app
 
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from agri_env.models import Action, Observation
 from server.agri_environment import AgriEnvironment
 
@@ -22,6 +24,22 @@ app = create_app(
     env_name="agri_env",
     max_concurrent_envs=64,
 )
+
+
+
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Purge any existing root routes (like the OpenEnv redirect)
+app.router.routes = [r for r in app.router.routes if r.path != "/"]
+
+# Now add our custom root route
+@app.get("/", include_in_schema=False, name="custom_index")
+async def serve_index():
+    return FileResponse("static/index.html")
 
 
 def main(host: str = "0.0.0.0", port: int | None = None) -> None:
